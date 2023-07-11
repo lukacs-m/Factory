@@ -29,34 +29,108 @@ import Foundation
 // MARK: - Locking
 
 /// Master recursive lock
-internal var globalRecursiveLock = RecursiveLock()
+internal var globalRecursiveLock = RecursiveLock.shared
 
-/// Custom recursive lock class
-internal final class RecursiveLock: NSLocking {
+ ///Custom recursive lock class
+//internal final class RecursiveLock: NSLocking {
+//
+//    static let shared = RecursiveLock()
+//
+//    init() {
+//        let mutexAttr = UnsafeMutablePointer<pthread_mutexattr_t>.allocate(capacity: 1)
+//        pthread_mutexattr_init(mutexAttr)
+//        pthread_mutexattr_settype(mutexAttr, Int32(PTHREAD_MUTEX_RECURSIVE))
+//        mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
+//        pthread_mutex_init(mutex, mutexAttr)
+//        pthread_mutexattr_destroy(mutexAttr)
+//        mutexAttr.deallocate()
+//    }
+//
+//    deinit {
+//        pthread_mutex_destroy(mutex)
+//        mutex.deallocate()
+//    }
+//
+//    @inlinable func lock() {
+//        pthread_mutex_lock(mutex)
+//    }
+//
+//    @inlinable func unlock() {
+//        pthread_mutex_unlock(mutex)
+//    }
+//
+//    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
+//
+//}
 
-    init() {
-        let mutexAttr = UnsafeMutablePointer<pthread_mutexattr_t>.allocate(capacity: 1)
-        pthread_mutexattr_init(mutexAttr)
-        pthread_mutexattr_settype(mutexAttr, Int32(PTHREAD_MUTEX_RECURSIVE))
-        mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
-        pthread_mutex_init(mutex, mutexAttr)
-        pthread_mutexattr_destroy(mutexAttr)
-        mutexAttr.deallocate()
+//internal final class RecursiveLock {
+//    private var _lock: os_unfair_lock_t
+//
+//    init() {
+//        _lock = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
+//        _lock.initialize(to: os_unfair_lock())
+//    }
+//
+//    deinit {
+//        _lock.deallocate()
+//    }
+//
+//
+//    @inlinable func lock() {
+//        os_unfair_lock_lock(_lock)
+//    }
+//
+//    @inlinable func unlock() {
+//        os_unfair_lock_unlock(_lock)
+//    }
+//    //
+//    //    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
+//
+//}
+//
+internal final class RecursiveLock {
+    private let recursiveLock = NSRecursiveLock()
+
+    static let shared = RecursiveLock()
+    private init() {
+
     }
 
     deinit {
-        pthread_mutex_destroy(mutex)
-        mutex.deallocate()
     }
 
+
     @inlinable func lock() {
-        pthread_mutex_lock(mutex)
+        recursiveLock.lock()
     }
 
     @inlinable func unlock() {
-        pthread_mutex_unlock(mutex)
+        recursiveLock.unlock()
     }
-
-    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
+    //
+    //    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
 
 }
+
+//internal final class RecursiveLock {
+//    let nslock = NSLock()
+//
+//    init() {
+//
+//    }
+//
+//    deinit {
+//    }
+//
+//
+//    @inlinable func lock() {
+//        nslock.lock()
+//    }
+//
+//    @inlinable func unlock() {
+//        nslock.unlock()
+//    }
+//    //
+//    //    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
+//
+//}

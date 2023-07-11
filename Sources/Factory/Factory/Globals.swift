@@ -44,7 +44,7 @@ internal func resetAndTriggerFatalError(_ message: String, _ file: StaticString,
     globalDependencyChain = []
     globalDependencyChainMessages = []
     globalGraphResolutionDepth = 0
-    globalRecursiveLock = RecursiveLock()
+    globalRecursiveLock = RecursiveLock.shared
     globalTraceResolutions = []
     triggerFatalError(message, file, line) // GOES BOOM
 }
