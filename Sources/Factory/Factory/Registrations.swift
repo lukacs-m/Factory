@@ -51,11 +51,11 @@ public struct FactoryRegistration<P,T> {
         self.factory = factory
         #if DEBUG
         globalDebugLock.lock()
-        if let debug = globalDebugInformationMap[self.key] {
+        if let debug = GlobalFactoryVariables.shared.globalDebugInformationMap[self.key] {
             self.debug = debug
         } else {
             self.debug = .init(type: String(reflecting: T.self), key: key)
-            globalDebugInformationMap[self.key] = self.debug
+            GlobalFactoryVariables.shared.globalDebugInformationMap[self.key] = self.debug
         }
         globalDebugLock.unlock()
         #endif
@@ -95,7 +95,7 @@ public struct FactoryRegistration<P,T> {
             circularDependencyChainCheck(max: manager.dependencyChainTestMax)
         }
 
-        let traceLevel: Int = globalTraceResolutions.count
+        let traceLevel: Int = GlobalFactoryVariables.shared.globalTraceResolutions.count
         var traceNew: String?
         if manager.trace {
             let wrapped = current
@@ -103,41 +103,41 @@ public struct FactoryRegistration<P,T> {
                 traceNew = "N" // detects if new instance created
                 return wrapped($0)
             }
-            globalTraceResolutions.append("")
+            GlobalFactoryVariables.shared.globalTraceResolutions.append("")
         }
         #endif
 
-        globalGraphResolutionDepth += 1
+        GlobalFactoryVariables.shared.globalGraphResolutionDepth += 1
         let instance: T
         if let scope = options?.scope ?? manager.defaultScope {
             instance = scope.resolve(using: manager.cache, key: key, ttl: options?.ttl, factory: { current(parameters) }) }
         else {
             instance = current(parameters)
         }
-        globalGraphResolutionDepth -= 1
+        GlobalFactoryVariables.shared.globalGraphResolutionDepth -= 1
 
-        if globalGraphResolutionDepth == 0 {
+        if GlobalFactoryVariables.shared.globalGraphResolutionDepth == 0 {
             Scope.graph.cache.reset()
             #if DEBUG
-            globalDependencyChainMessages = []
+            GlobalFactoryVariables.shared.globalDependencyChainMessages = []
             #endif
         }
         
         #if DEBUG
-        if !globalDependencyChain.isEmpty {
-            globalDependencyChain.removeLast()
+        if !GlobalFactoryVariables.shared.globalDependencyChain.isEmpty {
+            GlobalFactoryVariables.shared.globalDependencyChain.removeLast()
         }
 
         if manager.trace {
-            let indent = String(repeating: "    ", count: globalGraphResolutionDepth)
+            let indent = String(repeating: "    ", count: GlobalFactoryVariables.shared.globalGraphResolutionDepth)
             let address = (((instance as? (any OptionalProtocol))?.hasWrappedValue ?? true)) ? Int(bitPattern: ObjectIdentifier(instance as AnyObject)) : 0
             let resolution = address == 0 ? "nil" : "\(traceNew ?? "C"):\(address) \(type(of: instance as Any))"
-            if globalTraceResolutions.count > traceLevel {
-                globalTraceResolutions[traceLevel] = "\(globalGraphResolutionDepth): \(indent)\(container).\(debug.key) = \(resolution)"
+            if GlobalFactoryVariables.shared.globalTraceResolutions.count > traceLevel {
+                GlobalFactoryVariables.shared.globalTraceResolutions[traceLevel] = "\(GlobalFactoryVariables.shared.globalGraphResolutionDepth): \(indent)\(container).\(debug.key) = \(resolution)"
             }
-            if globalGraphResolutionDepth == 0 {
-                globalTraceResolutions.forEach { globalLogger($0) }
-                globalTraceResolutions = []
+            if GlobalFactoryVariables.shared.globalGraphResolutionDepth == 0 {
+                GlobalFactoryVariables.shared.globalTraceResolutions.forEach { GlobalFactoryVariables.shared.globalLogger($0) }
+                GlobalFactoryVariables.shared.globalTraceResolutions = []
             }
         }
         #endif
@@ -269,16 +269,16 @@ public struct FactoryRegistration<P,T> {
     internal func circularDependencyChainCheck(max: Int) {
         let typeComponents = debug.type.components(separatedBy: CharacterSet(charactersIn: "<>"))
         let typeName = typeComponents.count > 1 ? typeComponents[1] : typeComponents[0]
-        let typeIndex = globalDependencyChain.firstIndex(where: { $0 == typeName })
-        globalDependencyChain.append(typeName)
+        let typeIndex = GlobalFactoryVariables.shared.globalDependencyChain.firstIndex(where: { $0 == typeName })
+        GlobalFactoryVariables.shared.globalDependencyChain.append(typeName)
         if let index = typeIndex {
-            let chain = globalDependencyChain[index...]
+            let chain = GlobalFactoryVariables.shared.globalDependencyChain[index...]
             let message = "FACTORY: Circular dependency chain - \(chain.joined(separator: " > "))"
-            if globalDependencyChainMessages.filter({ $0 == message }).count == max {
-                resetAndTriggerFatalError(message, #file, #line)
+            if GlobalFactoryVariables.shared.globalDependencyChainMessages.filter({ $0 == message }).count == max {
+                GlobalFactoryVariables.shared.resetAndTriggerFatalError(message, #file, #line)
             } else {
-                globalDependencyChain = [typeName]
-                globalDependencyChainMessages.append(message)
+                GlobalFactoryVariables.shared.globalDependencyChain = [typeName]
+                GlobalFactoryVariables.shared.globalDependencyChainMessages.append(message)
             }
         }
     }

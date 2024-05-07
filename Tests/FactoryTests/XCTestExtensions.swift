@@ -55,5 +55,4 @@ extension XCTestCase {
             triggerFatalError = Swift.fatalError
         }
     }
-
 }

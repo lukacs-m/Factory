@@ -110,7 +110,7 @@ extension ManagedContainer {
         Factory<T?>(self, key: key) {
             #if DEBUG
             if self.manager.promiseTriggersError {
-                resetAndTriggerFatalError("\(T.self) was not registered", #file, #line)
+                GlobalFactoryVariables.shared.resetAndTriggerFatalError("\(T.self) was not registered", #file, #line)
             } else {
                 return nil
             }
@@ -124,7 +124,7 @@ extension ManagedContainer {
         ParameterFactory<P,T?>(self, key: key) { _ in
             #if DEBUG
             if self.manager.promiseTriggersError {
-                resetAndTriggerFatalError("\(T.self) was not registered", #file, #line)
+                GlobalFactoryVariables.shared.resetAndTriggerFatalError("\(T.self) was not registered", #file, #line)
             } else {
                 return nil
             }
@@ -176,14 +176,14 @@ public final class ContainerManager {
 
     /// Public var enabling factory resolution trace statements in debug mode for ALL containers.
     public var trace: Bool {
-        get { globalTraceFlag }
-        set { globalTraceFlag = newValue }
+        get { GlobalFactoryVariables.shared.globalTraceFlag }
+        set { GlobalFactoryVariables.shared.globalTraceFlag = newValue }
     }
 
     /// Public access to logging facility in debug mode for ALL containers.
     public var logger: (String) -> Void {
-        get { globalLogger }
-        set { globalLogger = newValue }
+        get { GlobalFactoryVariables.shared.globalLogger }
+        set { GlobalFactoryVariables.shared.globalLogger = newValue }
     }
 
     internal func isEmpty(_ options: FactoryResetOptions) -> Bool {
