@@ -205,7 +205,7 @@ public final class ContainerManager {
     #endif
 
     /// Alias for Factory registration map.
-    internal typealias FactoryMap = [FactoryKey:AnyFactory]
+    internal typealias FactoryMap = [FactoryKey:any AnyFactory]
     /// Alias for Factory options map.
     internal typealias FactoryOptionsMap = [FactoryKey:FactoryOptions]
     /// Alias for Factory once set.
@@ -325,7 +325,7 @@ extension ManagedContainer {
         if manager.autoRegistrationCheckNeeded {
             manager.autoRegistrationCheckNeeded = false
             manager.autoRegistering = true
-            (self as? AutoRegistering)?.autoRegister()
+            (self as? (any AutoRegistering))?.autoRegister()
             manager.autoRegistering = false
         }
     }

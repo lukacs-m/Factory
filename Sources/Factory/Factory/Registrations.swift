@@ -32,7 +32,7 @@ public struct FactoryRegistration<P,T> {
     /// Key used to manage registrations and cached values.
     internal let key: FactoryKey
     /// A strong reference to the container supporting this Factory.
-    internal let container: ManagedContainer
+    internal let container: any ManagedContainer
     /// Typed factory with scope and factory.
     internal let factory: (P) -> T
 
@@ -45,7 +45,7 @@ public struct FactoryRegistration<P,T> {
     internal var once: Bool = false
 
     /// Initializer for registration sets passed values and default scope from container manager.
-    internal init(key: StaticString, container: ManagedContainer, factory: @escaping (P) -> T) {
+    internal init(key: StaticString, container: any ManagedContainer, factory: @escaping (P) -> T) {
         self.key = FactoryKey(type: T.self, key: key)
         self.container = container
         self.factory = factory
@@ -130,7 +130,7 @@ public struct FactoryRegistration<P,T> {
 
         if manager.trace {
             let indent = String(repeating: "    ", count: globalGraphResolutionDepth)
-            let address = (((instance as? OptionalProtocol)?.hasWrappedValue ?? true)) ? Int(bitPattern: ObjectIdentifier(instance as AnyObject)) : 0
+            let address = (((instance as? (any OptionalProtocol))?.hasWrappedValue ?? true)) ? Int(bitPattern: ObjectIdentifier(instance as AnyObject)) : 0
             let resolution = address == 0 ? "nil" : "\(traceNew ?? "C"):\(address) \(type(of: instance as Any))"
             if globalTraceResolutions.count > traceLevel {
                 globalTraceResolutions[traceLevel] = "\(globalGraphResolutionDepth): \(indent)\(container).\(debug.key) = \(resolution)"
@@ -165,7 +165,7 @@ public struct FactoryRegistration<P,T> {
             let manager = container.manager
             manager.registrations[key] = TypedFactory(factory: factory)
             if manager.autoRegistering == false, let scope = manager.options[key]?.scope {
-                let cache = (scope as? InternalScopeCaching)?.cache ?? manager.cache
+                let cache = (scope as? (any InternalScopeCaching))?.cache ?? manager.cache
                 cache.removeValue(forKey: key)
             }
         }
@@ -246,7 +246,7 @@ public struct FactoryRegistration<P,T> {
         let manager = container.manager
         switch options {
         case .all:
-            let cache = (manager.options[key]?.scope as? InternalScopeCaching)?.cache ?? manager.cache
+            let cache = (manager.options[key]?.scope as? (any InternalScopeCaching))?.cache ?? manager.cache
             cache.removeValue(forKey: key)
             manager.registrations.removeValue(forKey: key)
             manager.options.removeValue(forKey: key)
@@ -260,7 +260,7 @@ public struct FactoryRegistration<P,T> {
         case .registration:
             manager.registrations.removeValue(forKey: key)
         case .scope:
-            let cache = (manager.options[key]?.scope as? InternalScopeCaching)?.cache ?? manager.cache
+            let cache = (manager.options[key]?.scope as? (any InternalScopeCaching))?.cache ?? manager.cache
             cache.removeValue(forKey: key)
         }
     }
@@ -308,9 +308,9 @@ internal struct FactoryOptions {
     /// Time to live option for scopes
     var ttl: TimeInterval?
     /// Contexts
-    var argumentContexts: [String:AnyFactory]?
+    var argumentContexts: [String:any AnyFactory]?
     /// Contexts
-    var contexts: [String:AnyFactory]?
+    var contexts: [String:any AnyFactory]?
     /// Decorator will be passed fully constructed instance for further configuration.
     var decorator: Any?
     /// Once flag for options
@@ -319,7 +319,7 @@ internal struct FactoryOptions {
 
 extension FactoryOptions {
     /// Internal function to return factory based on current context
-    func factoryForCurrentContext() -> AnyFactory?  {
+    func factoryForCurrentContext() -> (any AnyFactory)?  {
         if let contexts = argumentContexts, !contexts.isEmpty {
             for arg in FactoryContext.current.arguments {
                 if let found = contexts[arg] {
