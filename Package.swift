@@ -3,6 +3,21 @@
 
 import PackageDescription
 
+let swiftSettings: [SwiftSetting] = [
+   .enableUpcomingFeature("BareSlashRegexLiterals"),
+   .enableUpcomingFeature("ConciseMagicFile"),
+   .enableUpcomingFeature("ExistentialAny"),
+   .enableUpcomingFeature("ForwardTrailingClosures"),
+   .enableUpcomingFeature("ImplicitOpenExistentials"),
+   .enableUpcomingFeature("StrictConcurrency"),
+   .enableUpcomingFeature("IsolatedDefaultValues"),
+   .enableUpcomingFeature("GlobalConcurrency"),
+   .enableUpcomingFeature("InferSendableFromCaptures"),
+   .enableUpcomingFeature("RegionBasedIsolation"),
+   .unsafeFlags(["-warn-concurrency",
+                 "-enable-actor-data-race-checks"])
+]
+
 let package = Package(
     name: "Factory",
     platforms: [
@@ -28,7 +43,9 @@ let package = Package(
         .target(
             name: "Factory",
             dependencies: [],
-            resources: [.copy("PrivacyInfo.xcprivacy")]),
+            resources: [.copy("PrivacyInfo.xcprivacy")],
+            swiftSettings: swiftSettings
+        ),
         .testTarget(
             name: "FactoryTests",
             dependencies: ["Factory"]),
