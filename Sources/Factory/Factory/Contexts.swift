@@ -44,39 +44,74 @@ public enum FactoryContextType: Equatable {
     case device
 }
 
-public struct FactoryContext {
+public final class FactoryContext: @unchecked Sendable {
+    private var _arguments: [String] = ProcessInfo.processInfo.arguments
+    private var _runtimeArguments: [String: String] = [:]
+    private var _isPreview: Bool = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    private var _isTest: Bool = NSClassFromString("XCTest") != nil
+    private var _isSimulator: Bool =  ProcessInfo.processInfo.environment["SIMULATOR_UDID"] != nil
+    private let lock = NSLock()
+
+    private init() {}
+    
     /// Proxy for application arguments.
-    public var arguments: [String] = ProcessInfo.processInfo.arguments
+    public var arguments: [String] {
+        get { lock.synchronized { _arguments } }
+        set { lock.synchronized { _arguments = newValue } }
+    }
+    
     /// Runtime arguments
-    public var runtimeArguments: [String:String] = [:]
+    public var runtimeArguments: [String: String] {
+        get { lock.synchronized { _runtimeArguments } }
+        set { lock.synchronized { _runtimeArguments = newValue } }
+    }
+    
     /// Proxy check for application running in preview mode.
-    public var isPreview: Bool = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    public var isPreview: Bool {
+        get { lock.synchronized { _isPreview } }
+        set { lock.synchronized { _isPreview = newValue } }
+    }
+    
     /// Proxy check for application running in test mode.
-    public var isTest: Bool = NSClassFromString("XCTest") != nil
+    public var isTest: Bool {
+        get { lock.synchronized { _isTest } }
+        set { lock.synchronized { _isTest = newValue } }
+    }
+    
     /// Proxy check for application running in simulator.
-    public var isSimulator: Bool = ProcessInfo.processInfo.environment["SIMULATOR_UDID"] != nil
-    #if DEBUG
+    public var isSimulator: Bool {
+        get { lock.synchronized { _isSimulator } }
+        set { lock.synchronized { _isSimulator = newValue } }
+    }
+
     /// Proxy checks for application running in DEBUG mode.
-    public var isDebug: Bool = true
+    public var isDebug: Bool {
+    #if DEBUG
+        true
     #else
-    /// Proxy check for application running in DEBUG mode.
-    public var isDebug: Bool = false
+        false
     #endif
-}
+    }
 
-extension FactoryContext {
     /// Global current context.
-    public static var current = FactoryContext()
-}
+    public static let current = FactoryContext()
 
-extension FactoryContext {
+    /// Reset the `FactoryContext` to init state
+    public func reset() {
+        runtimeArguments =  [:]
+        arguments = ProcessInfo.processInfo.arguments
+        isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        isTest = NSClassFromString("XCTest") != nil
+        isSimulator = ProcessInfo.processInfo.environment["SIMULATOR_UDID"] != nil
+    }
+    
     /// Add argument to global context.
     public static func setArg(_ arg: String, forKey key: String) {
         FactoryContext.current.runtimeArguments[key] = arg
     }
+    
     /// Add argument to global context.
     public static func removeArg(forKey key: String) {
         FactoryContext.current.runtimeArguments.removeValue(forKey: key)
     }
 }
-

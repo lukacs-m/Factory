@@ -15,7 +15,7 @@ extension XCTestCase {
         let expectation = self.expectation(description: "expectingFatalError")
         var assertionMessage: String = ""
 
-        triggerFatalError = { (message, _, _) in
+        GlobalFactoryVariables.shared.triggerFatalError = { (message, _, _) in
             assertionMessage = message()
             DispatchQueue.main.async {
                 expectation.fulfill()
@@ -28,7 +28,7 @@ extension XCTestCase {
 
         waitForExpectations(timeout: 0.1) { _ in
             XCTAssertEqual(expectedMessage, assertionMessage)
-            triggerFatalError = Swift.fatalError
+            GlobalFactoryVariables.shared.triggerFatalError = Swift.fatalError
         }
     }
 
@@ -36,7 +36,7 @@ extension XCTestCase {
         let expectation = self.expectation(description: "expectingFatalError")
         var assertionMessage: String = ""
 
-        triggerFatalError = { (message, _, _) in
+        GlobalFactoryVariables.shared.triggerFatalError = { (message, _, _) in
             assertionMessage = message()
             DispatchQueue.main.async {
                 expectation.fulfill()
@@ -52,8 +52,7 @@ extension XCTestCase {
 
         waitForExpectations(timeout: 0.1) { _ in
             XCTAssertEqual(assertionMessage, "")
-            triggerFatalError = Swift.fatalError
+            GlobalFactoryVariables.shared.triggerFatalError = Swift.fatalError
         }
     }
-
 }

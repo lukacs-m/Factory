@@ -49,7 +49,7 @@ import Foundation
 ///
 /// If no scope is associated with a given Factory then the scope is considered to be unique and a new instance
 /// of the dependency will be created each and every time that factory is resolved.
-public class Scope {
+public class Scope: @unchecked Sendable {
 
     fileprivate init() {}
 
@@ -74,13 +74,13 @@ public class Scope {
     }
 
     /// Internal function returns unboxed value if it exists
-    fileprivate func unboxed<T>(box: AnyBox?) -> T? {
+    fileprivate func unboxed<T>(box: (any AnyBox)?) -> T? {
         (box as? StrongBox<T>)?.boxed
     }
 
     /// Internal function correctly boxes value depending upon scope type
-    fileprivate func box<T>(_ instance: T) -> AnyBox? {
-        if let optional = instance as? OptionalProtocol {
+    fileprivate func box<T>(_ instance: T) -> (any AnyBox)? {
+        if let optional = instance as? (any OptionalProtocol) {
             if optional.hasWrappedValue {
                 return StrongBox<T>(scopeID: scopeID, timestamp: CFAbsoluteTimeGetCurrent(), boxed: instance)
             }
@@ -131,9 +131,9 @@ extension Scope {
             super.init()
         }
         /// Internal function returns cached value if exists
-        fileprivate override func unboxed<T>(box: AnyBox?) -> T? {
+        fileprivate override func unboxed<T>(box: (any AnyBox)?) -> T? {
             if let box = box as? WeakBox, let instance = box.boxed as? T {
-                if let optional = instance as? OptionalProtocol {
+                if let optional = instance as? (any OptionalProtocol) {
                     if optional.hasWrappedValue {
                         return instance
                     }
@@ -144,8 +144,8 @@ extension Scope {
             return nil
         }
         /// Override function correctly boxes weak cache value
-        fileprivate override func box<T>(_ instance: T) -> AnyBox? {
-            if let optional = instance as? OptionalProtocol {
+        fileprivate override func box<T>(_ instance: T) -> (any AnyBox)? {
+            if let optional = instance as? (any OptionalProtocol) {
                 if let unwrapped = optional.wrappedValue, type(of: unwrapped) is AnyObject.Type {
                     return WeakBox(scopeID: scopeID, timestamp: CFAbsoluteTimeGetCurrent(), boxed: unwrapped as AnyObject)
                 }
@@ -171,8 +171,8 @@ extension Scope {
         internal var cache = Cache()
         /// Reset
         public func reset() {
-            defer { globalRecursiveLock.unlock()  }
-            globalRecursiveLock.lock()
+            defer { RecursiveLockManager.shared.unlock()  }
+            RecursiveLockManager.shared.lock()
             cache.reset()
         }
     }
@@ -198,12 +198,12 @@ extension Scope {
 extension Scope {
     /// Internal class that manages scope caching for containers and scopes.
     internal final class Cache {
-        typealias CacheMap = [FactoryKey:AnyBox]
+        typealias CacheMap = [FactoryKey:any AnyBox]
         /// Internal support functions
-        @inlinable func value(forKey key: FactoryKey) -> AnyBox? {
+        @inlinable func value(forKey key: FactoryKey) -> (any AnyBox)? {
             cache[key]
         }
-        @inlinable func set(value: AnyBox, forKey key: FactoryKey)  {
+        @inlinable func set(value: any AnyBox, forKey key: FactoryKey)  {
             cache[key] = value
         }
         @inlinable func set(timestamp: Double, forKey key: FactoryKey)  {

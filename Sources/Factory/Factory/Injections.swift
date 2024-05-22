@@ -48,7 +48,7 @@ import SwiftUI
 /// the referenced dependencies will be acquired when the parent class is created.
 @propertyWrapper public struct Injected<T> {
 
-    private var reference: BoxedFactoryReference
+    private var reference: any BoxedFactoryReference
     private var dependency: T
 
     /// Initializes the property wrapper. The dependency is resolved on initialization.
@@ -106,7 +106,7 @@ import SwiftUI
 /// > Note: Lazy injection is resolved the first time the dependency is referenced by the code, and **not** on initialization.
 @propertyWrapper public struct LazyInjected<T> {
     
-    private var reference: BoxedFactoryReference
+    private var reference: any BoxedFactoryReference
     private var dependency: T!
     private var initialize = true
     
@@ -125,8 +125,8 @@ import SwiftUI
     /// Manages the wrapped dependency, which is resolved when this value is accessed for the first time.
     public var wrappedValue: T {
         mutating get {
-            defer { globalRecursiveLock.unlock()  }
-            globalRecursiveLock.lock()
+            defer { RecursiveLockManager.shared.unlock()  }
+            RecursiveLockManager.shared.lock()
             if initialize {
                 resolve()
             }
@@ -190,7 +190,7 @@ import SwiftUI
 /// > Note: Lazy injection is resolved the first time the dependency is referenced by the code, **not** on initialization.
 @propertyWrapper public struct WeakLazyInjected<T> {
     
-    private var reference: BoxedFactoryReference
+    private var reference: any BoxedFactoryReference
     private weak var dependency: AnyObject?
     private var initialize = true
     
@@ -209,8 +209,8 @@ import SwiftUI
     /// Manages the wrapped dependency, which is resolved when this value is accessed for the first time.
     public var wrappedValue: T? {
         mutating get {
-            defer { globalRecursiveLock.unlock()  }
-            globalRecursiveLock.lock()
+            defer { RecursiveLockManager.shared.unlock()  }
+            RecursiveLockManager.shared.lock()
             if initialize {
                 resolve()
             }
@@ -258,11 +258,11 @@ import SwiftUI
     private var dependency: T?
     /// Initializes the property wrapper from the default Container. The dependency is resolved on initialization.
     public init() {
-        self.dependency = (Container.shared as? Resolving)?.resolve()
+        self.dependency = (Container.shared as? (any Resolving))?.resolve()
     }
     /// Initializes the property wrapper from the default Container. The dependency is resolved on initialization.
-    public init(_ container: ManagedContainer) {
-        self.dependency = (container as? Resolving)?.resolve()
+    public init(_ container: any ManagedContainer) {
+        self.dependency = (container as? (any Resolving))?.resolve()
     }
     /// Manages the wrapped dependency.
     public var wrappedValue: T? {

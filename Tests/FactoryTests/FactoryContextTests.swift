@@ -36,7 +36,7 @@ final class FactoryContextTests: XCTestCase {
     override func tearDown() {
         super.tearDown()
         // restore current arg state
-        FactoryContext.current = FactoryContext()
+        FactoryContext.current.reset()
     }
 
   #if os(macOS)

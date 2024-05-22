@@ -29,44 +29,69 @@ import Foundation
 // MARK: - Locking
 
 /// Master recursive lock
-internal var globalRecursiveLock = RecursiveLock()
-
-/// Custom recursive lock
-internal struct RecursiveLock {
-
-    init() {
-        let mutexAttr = UnsafeMutablePointer<pthread_mutexattr_t>.allocate(capacity: 1)
-        pthread_mutexattr_init(mutexAttr)
-        pthread_mutexattr_settype(mutexAttr, Int32(PTHREAD_MUTEX_RECURSIVE))
-        mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
-        pthread_mutex_init(mutex, mutexAttr)
-        pthread_mutexattr_destroy(mutexAttr)
-        mutexAttr.deallocate()
+final class RecursiveLockManager: @unchecked Sendable {
+    private let globalRecursiveLock = NSRecursiveLock()
+    private var lockCount = 0
+    
+    static let shared = RecursiveLockManager()
+    
+    private init() {}
+    
+    func lock() {
+        globalRecursiveLock.lock()
+        lockCount += 1
     }
 
-//    deinit {
-//        pthread_mutex_destroy(mutex)
-//        mutex.deallocate()
-//    }
-
-    @inline(__always) func lock() {
-        pthread_mutex_lock(mutex)
+    func unlock() {
+        globalRecursiveLock.unlock()
+        lockCount -= 1
     }
 
-    @inline(__always) func unlock() {
-        pthread_mutex_unlock(mutex)
+    func unlockAll() {
+        while lockCount > 0 {
+            globalRecursiveLock.unlock()
+            lockCount -= 1
+        }
     }
-
-    @usableFromInline let mutex: UnsafeMutablePointer<pthread_mutex_t>
-
 }
 
+///// Custom recursive lock
+//internal struct RecursiveLock {
+//
+//    init() {
+//        let mutexAttr = UnsafeMutablePointer<pthread_mutexattr_t>.allocate(capacity: 1)
+//        pthread_mutexattr_init(mutexAttr)
+//        pthread_mutexattr_settype(mutexAttr, Int32(PTHREAD_MUTEX_RECURSIVE))
+//        mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
+//        pthread_mutex_init(mutex, mutexAttr)
+//        pthread_mutexattr_destroy(mutexAttr)
+//        mutexAttr.deallocate()
+//    }
+//
+////    deinit {
+////        pthread_mutex_destroy(mutex)
+////        mutex.deallocate()
+////    }
+//
+//    @inline(__always) func lock() {
+//        pthread_mutex_lock(mutex)
+//    }
+//
+//    @inline(__always) func unlock() {
+//        pthread_mutex_unlock(mutex)
+//    }
+//
+//    @usableFromInline let mutex: UnsafeMutablePointer<pthread_mutex_t>
+//
+//}
+
 /// Master spin lock
-internal let globalDebugLock = SpinLock()
+//internal let globalDebugLock = SpinLock()
 
 #if os(macOS) || os(iOS) || os(watchOS)
 /// Custom spin lock
-internal struct SpinLock {
+internal struct SpinLock: @unchecked Sendable {
+    static let globalDebugLock = SpinLock()
 
     init() {
         oslock = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
@@ -86,7 +111,8 @@ internal struct SpinLock {
 }
 #else
 /// Custom spin lock compatible with Linux
-internal struct SpinLock {
+internal struct SpinLock: @unchecked Sendable {
+    static let globalDebugLock = SpinLock()
 
     init() {
         mutex = UnsafeMutablePointer<pthread_mutex_t>.allocate(capacity: 1)
