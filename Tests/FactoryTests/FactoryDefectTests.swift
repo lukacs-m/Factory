@@ -236,5 +236,5 @@ fileprivate final class AutoRegisteringContainer: SharedContainer, AutoRegisteri
         test.register { MockServiceN(32) }
         singletonTest.register { MockServiceN(32) }
     }
-    var manager = ContainerManager()
+    let manager = ContainerManager()
 }

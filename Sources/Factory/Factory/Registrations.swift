@@ -50,14 +50,14 @@ public struct FactoryRegistration<P,T> {
         self.container = container
         self.factory = factory
         #if DEBUG
-        globalDebugLock.lock()
+        SpinLock.globalDebugLock.lock()
         if let debug = GlobalFactoryVariables.shared.globalDebugInformationMap[self.key] {
             self.debug = debug
         } else {
             self.debug = .init(type: String(reflecting: T.self), key: key)
             GlobalFactoryVariables.shared.globalDebugInformationMap[self.key] = self.debug
         }
-        globalDebugLock.unlock()
+        SpinLock.globalDebugLock.unlock()
         #endif
     }
 
@@ -72,8 +72,8 @@ public struct FactoryRegistration<P,T> {
     /// - Parameter factory: Factory wanting resolution.
     /// - Returns: Instance of the desired type.
     internal func resolve(with parameters: P) -> T {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
 
         container.unsafeCheckAutoRegistration()
 
@@ -158,8 +158,8 @@ public struct FactoryRegistration<P,T> {
     ///   - id: ID of associated Factory.
     ///   - factory: Factory closure called to create a new instance of the service when needed.
     internal func register(_ factory: @escaping (P) -> T) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         container.unsafeCheckAutoRegistration()
         if unsafeCanUpdateOptions() {
             let manager = container.manager
@@ -174,8 +174,8 @@ public struct FactoryRegistration<P,T> {
     /// Registers a new factory scope.
     /// - Parameter: - scope: New scope
     internal func scope(_ scope: Scope?) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         container.unsafeCheckAutoRegistration()
         let manager = container.manager
         if var options = manager.options[key] {
@@ -224,8 +224,8 @@ public struct FactoryRegistration<P,T> {
 
     /// Support function for options mutation.
     internal func options(mutate: (_ options: inout FactoryOptions) -> Void) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         container.unsafeCheckAutoRegistration()
         let manager = container.manager
         var options = manager.options[key] ?? FactoryOptions()
@@ -241,8 +241,8 @@ public struct FactoryRegistration<P,T> {
     ///   - options: Reset option: .all, .registration, .scope, .none
     ///   - id: ID of item to remove from the appropriate cache.
     internal func reset(options: FactoryResetOptions) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         let manager = container.manager
         switch options {
         case .all:

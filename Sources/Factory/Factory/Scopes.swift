@@ -49,7 +49,7 @@ import Foundation
 ///
 /// If no scope is associated with a given Factory then the scope is considered to be unique and a new instance
 /// of the dependency will be created each and every time that factory is resolved.
-public class Scope {
+public class Scope: @unchecked Sendable {
 
     fileprivate init() {}
 
@@ -171,8 +171,8 @@ extension Scope {
         internal var cache = Cache()
         /// Reset
         public func reset() {
-            defer { globalRecursiveLock.unlock()  }
-            globalRecursiveLock.lock()
+            defer { RecursiveLockManager.shared.unlock()  }
+            RecursiveLockManager.shared.lock()
             cache.reset()
         }
     }

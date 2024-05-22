@@ -89,7 +89,7 @@ public protocol SharedContainer: ManagedContainer {
 /// }
 /// ```
 ///  See <doc:Containers> for more information.
-public protocol ManagedContainer: AnyObject {
+public protocol ManagedContainer: AnyObject, Sendable {
     /// Defines the ContainerManager used to manage registrations, resolutions, and scope caching for that container. Encapsulating the code in
     /// this fashion makes creating and using your own custom containers much simpler.
     var manager: ContainerManager { get }
@@ -159,17 +159,32 @@ extension ManagedContainer {
 /// to a pristine state, as well as push/pop methods that can save and restore the current state.
 ///
 /// Those functions are designed primarily for testing.
-public final class ContainerManager {
+public final class ContainerManager: @unchecked Sendable {
+    private var _dependencyChainTestMax: Int = 8
+    private var _defaultScope: Scope?
+
+    private let lock = NSLock()
 
     /// Public initializer
-    public init() {}
+    public init(defaultScope: Scope? = .unique) {
+        self.defaultScope = defaultScope
+    }
 
     /// Default scope
-    public var defaultScope: Scope?
+//    public let defaultScope: Scope?
+    public var defaultScope: Scope? {
+        get { lock.synchronized { _defaultScope } }
+        set { lock.synchronized { _defaultScope = newValue } }
+    }
 
     #if DEBUG
     /// Public variable exposing dependency chain test maximum
-    public var dependencyChainTestMax: Int = 8
+//    public var dependencyChainTestMax: Int = 8
+    public var dependencyChainTestMax: Int {
+        get { lock.synchronized { _dependencyChainTestMax } }
+        set { lock.synchronized { _dependencyChainTestMax = newValue } }
+    }
+    
 
     /// Public variable promise behavior
     public var promiseTriggersError: Bool = FactoryContext.current.isDebug
@@ -187,8 +202,8 @@ public final class ContainerManager {
     }
 
     internal func isEmpty(_ options: FactoryResetOptions) -> Bool {
-        defer { globalRecursiveLock.unlock() }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock() }
+        RecursiveLockManager.shared.lock()
         switch options {
         case .all:
             return registrations.isEmpty && cache.isEmpty && self.options.isEmpty
@@ -234,8 +249,8 @@ extension ContainerManager {
 
     /// Resets the Container to its original state, removing all registrations and clearing all scope caches.
     public func reset(options: FactoryResetOptions = .all) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         switch options {
         case .all:
             self.registrations.removeAll(keepingCapacity: true)
@@ -261,8 +276,8 @@ extension ContainerManager {
 
     /// Clears any cached values associated with a specific scope, leaving the other scope caches intact.
     public func reset(scope: Scope) {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         switch scope {
         case is Scope.Singleton:
             #if DEBUG
@@ -276,15 +291,15 @@ extension ContainerManager {
 
     /// Test function pushes the current registration and cache states
     public func push() {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         stack.append((registrations, options, cache.cache, autoRegistrationCheckNeeded))
     }
 
     /// Test function pops and restores a previously pushed registration and cache state
     public func pop() {
-        defer { globalRecursiveLock.unlock()  }
-        globalRecursiveLock.lock()
+        defer { RecursiveLockManager.shared.unlock()  }
+        RecursiveLockManager.shared.lock()
         if let state = stack.popLast() {
             registrations = state.0
             options = state.1

@@ -162,7 +162,7 @@ fileprivate final class MultiThreadedContainer: SharedContainer {
     fileprivate var c: Factory<C> { self { C(d: self.d()) } }
     fileprivate var d: Factory<D> { self { D() }.cached }
     fileprivate var e: Factory<E> { self { E() } }
-    var manager = ContainerManager()
+    let manager = ContainerManager()
 }
 
 extension XCTestCase {

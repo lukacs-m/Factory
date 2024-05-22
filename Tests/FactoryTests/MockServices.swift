@@ -181,7 +181,7 @@ extension Container {
 
 // Custom Container
 
-final class CustomContainer: SharedContainer, AutoRegistering {
+final class CustomContainer: @unchecked Sendable, SharedContainer, AutoRegistering {
     static let shared = CustomContainer()
     static var count = 0
     var count = 0
@@ -191,6 +191,7 @@ final class CustomContainer: SharedContainer, AutoRegistering {
         }
         .shared
     }
+    
     var decorated: Factory<MyService> {
         self {
             MyService()
@@ -199,6 +200,7 @@ final class CustomContainer: SharedContainer, AutoRegistering {
             self.count += 1
         }
     }
+    
     var once: Factory<MyService> {
         self {
             MyService()
@@ -209,6 +211,7 @@ final class CustomContainer: SharedContainer, AutoRegistering {
         }
         .once()
     }
+    
     func autoRegister() {
         print("CustomContainer AUTOREGISTERING")
         Self.count = 1

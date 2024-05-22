@@ -26,14 +26,7 @@
 
 import Foundation
 
- //MARK: - Internal Variables
-
-#if DEBUG
-/// Allow unit test interception of any fatal errors that may occur running the circular dependency check
-/// Variation of solution: https://stackoverflow.com/questions/32873212/unit-test-fatalerror-in-swift#
-internal var triggerFatalError = Swift.fatalError
-#endif
-
+//MARK: - Internal Variables
 
 internal final class GlobalFactoryVariables: @unchecked Sendable {
     private var _globalGraphResolutionDepth = 0
@@ -55,10 +48,14 @@ internal final class GlobalFactoryVariables: @unchecked Sendable {
         globalDependencyChain = []
         globalDependencyChainMessages = []
         globalGraphResolutionDepth = 0
-        globalRecursiveLock = RecursiveLock()
         globalTraceResolutions = []
+        RecursiveLockManager.shared.unlockAll()
         triggerFatalError(message, file, line) // GOES BOOM
     }
+    
+    /// Allow unit test interception of any fatal errors that may occur running the circular dependency check
+    /// Variation of solution: https://stackoverflow.com/questions/32873212/unit-test-fatalerror-in-swift#
+    internal var triggerFatalError = Swift.fatalError
     #endif
  
     static let shared = GlobalFactoryVariables()
@@ -103,13 +100,5 @@ internal final class GlobalFactoryVariables: @unchecked Sendable {
      var globalDebugInformationMap: [FactoryKey: FactoryDebugInformation] {
         get { lock.synchronized { _globalDebugInformationMap } }
         set { lock.synchronized { _globalDebugInformationMap = newValue } }
-    }
-}
-
-private extension NSLock {
-    func synchronized<T>(_ action: () -> T) -> T {
-        self.lock()
-        defer { self.unlock() }
-        return action()
     }
 }
